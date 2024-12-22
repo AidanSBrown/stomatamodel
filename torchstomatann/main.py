@@ -19,7 +19,7 @@ print(f"Using {device}")
 # Initialize model
 class NerualNetwork(nn.Module):
     def __init__(self):
-        super().__init__()
+        super(NerualNetwork,self).__init__()
         # Encoder
         self.enc1 = self.conv_block(3, 64)  # 3 channels (RGB)
         self.enc2 = self.conv_block(64, 128)
@@ -72,15 +72,18 @@ class NerualNetwork(nn.Module):
         return output
 
 model = NerualNetwork().to(device)
-print(model)
 
-X = torch.rand(1, 28, 28, device=device) # Creates a tensor of random image / data
+#                            Reading block                           #
+# print(model)
+# params = list(model.parameters())
+# print(len(params))
+# print(params[0].size())  
 
+input = torch.randn(1, 3, 256, 256)  # Example input
+target = torch.randn(1, 1, 256, 256)  # Example target
+output = model(input) # Forward pass
+loss_fn = nn.L1Loss()
 
-# stomata_image = torch.tensor(data)
-
-
-params = list(model.parameters())
-print(len(params))
-print(params[0].size())  
+loss = loss_fn(output, target)
+print(f"Loss: {loss.item()}")
 
