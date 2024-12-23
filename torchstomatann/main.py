@@ -5,6 +5,7 @@ from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 import numpy as np
 import torch.nn.functional as F
+import torch.optim as optim
 
 # Set GPU or CPU
 device = (
@@ -17,9 +18,9 @@ device = (
 print(f"Using {device}")
 
 # Initialize model
-class NerualNetwork(nn.Module):
+class NeuralNetwork(nn.Module):
     def __init__(self):
-        super(NerualNetwork,self).__init__()
+        super(NeuralNetwork,self).__init__()
         # Encoder
         self.enc1 = self.conv_block(3, 64)  # 3 channels (RGB)
         self.enc2 = self.conv_block(64, 128)
@@ -56,22 +57,22 @@ class NerualNetwork(nn.Module):
         center = self.center(F.max_pool2d(enc4, 2))
 
         # Decoder path
-        dec4 = self.dec4(F.upsample(center, scale_factor=2, mode='bilinear', align_corners=True))
+        dec4 = self.dec4(F.interpolate(center, scale_factor=2, mode='bilinear', align_corners=True))
         dec4 = dec4 + enc4  # Skip connection
 
-        dec3 = self.dec3(F.upsample(dec4, scale_factor=2, mode='bilinear', align_corners=True))
+        dec3 = self.dec3(F.interpolate(center, scale_factor=2, mode='bilinear', align_corners=True))
         dec3 = dec3 + enc3
 
-        dec2 = self.dec2(F.upsample(dec3, scale_factor=2, mode='bilinear', align_corners=True))
+        dec2 = self.dec2(F.interpolate(center, scale_factor=2, mode='bilinear', align_corners=True))
         dec2 = dec2 + enc2
 
-        dec1 = self.dec1(F.upsample(dec2, scale_factor=2, mode='bilinear', align_corners=True))
+        dec1 = self.dec1(F.interpolate(center, scale_factor=2, mode='bilinear', align_corners=True))
         dec1 = dec1 + enc1
 
         output = torch.sigmoid(self.final(dec1))
         return output
 
-model = NerualNetwork().to(device)
+model = NeuralNetwork().to(device)
 
 #                            Reading block                           #
 # print(model)
@@ -81,9 +82,17 @@ model = NerualNetwork().to(device)
 
 input = torch.randn(1, 3, 256, 256)  # Example input
 target = torch.randn(1, 1, 256, 256)  # Example target
+input = input.to(device)
+target = target.to(device)
+
 output = model(input) # Forward pass
-loss_fn = nn.L1Loss()
+loss_fn = nn.BCELoss()
 
 loss = loss_fn(output, target)
-print(f"Loss: {loss.item()}")
+print(loss)
 
+
+optimizer = optim.Adam(model.parameters(), lr=0.001)
+optimizer.zero_grad()  
+loss.backward()      
+optimizer.step()
