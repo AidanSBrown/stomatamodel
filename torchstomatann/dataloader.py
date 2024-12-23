@@ -52,31 +52,42 @@ class StomataDataset(Dataset):
         return sample
 
 data_transform = transforms.Compose([
-        transforms.Resize(256,256),
+        transforms.Resize(100),          # Need to change when applying to image j images
         transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406],
                              std=[0.229, 0.224, 0.225])
     ])
 
-dataset = StomataDataset(csv_file='data/faces/face_landmarks.csv',
+train_set = StomataDataset(csv_file='data/faces/face_landmarks.csv',
                                     root_dir='data/faces/',
-                                    transforms = data_transform)
+                                    transform = data_transform)
 
-fig = plt.figure()
+test_set = StomataDataset(csv_file='data/faces/face_landmarks.csv',
+                                    root_dir='data/faces/',
+                                    transform = data_transform)
 
-for i, sample in enumerate(dataset):
-    print(i, sample['image'].shape, sample['landmarks'].shape)
+trainloader = DataLoader(train_set, batch_size=16, shuffle=True, num_workers=1) # In the past my machine has been bad with multiple workers
+testloader = DataLoader(test_set, batch_size=16, shuffle=False, num_workers=1)
 
-    ax = plt.subplot(1, 4, i + 1)
-    plt.tight_layout()
-    ax.set_title('Sample #{}'.format(i))
-    ax.axis('off')
-    show_landmarks(**sample)
+# Test/debug
+for images, labels in trainloader:
+    print(images.shape, labels.shape) 
+    break
 
-    if i == 3:
-        plt.show()
-        break
+
+# for i, sample in enumerate(dataset):
+#     print(i, sample['image'].shape, sample['landmarks'].shape)
+
+#     ax = plt.subplot(1, 4, i + 1)
+#     plt.tight_layout()
+#     ax.set_title('Sample #{}'.format(i))
+#     ax.axis('off')
+#     show_landmarks(**sample)
+
+#     if i == 3:
+#         plt.show()
+#         break
 
 
 
