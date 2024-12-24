@@ -6,6 +6,7 @@ from torchvision import datasets, transforms
 import numpy as np
 import torch.nn.functional as F
 import torch.optim as optim
+from dataloader import StomataDataset, data_transform
 
 # Set GPU or CPU
 device = (
@@ -18,9 +19,9 @@ device = (
 print(f"Using {device}")
 
 # Initialize model
-class NeuralNetwork(nn.Module):
+class Stomatann(nn.Module):
     def __init__(self):
-        super(NeuralNetwork,self).__init__()
+        super(Stomatann,self).__init__()
         # Encoder
         self.enc1 = self.conv_block(3, 64)  # 3 channels (RGB)
         self.enc2 = self.conv_block(64, 128)
@@ -72,7 +73,7 @@ class NeuralNetwork(nn.Module):
         output = torch.sigmoid(self.final(dec1))
         return output
 
-model = NeuralNetwork().to(device)
+model = Stomatann().to(device)
 
 #                            Reading block                           #
 # print(model)
@@ -85,14 +86,40 @@ target = torch.randn(1, 1, 256, 256)  # Example target
 input = input.to(device)
 target = target.to(device)
 
-output = model(input) # Forward pass
-loss_fn = nn.BCELoss()
+# output = model(input) # Forward pass
+# loss_fn = nn.BCELoss()
 
-loss = loss_fn(output, target)
-print(loss)
+# loss = loss_fn(output, target)
+# print(loss)
 
+# optimizer = optim.Adam(model.parameters(), lr=0.001)
+# optimizer.zero_grad()  
+# loss.backward()      
+# optimizer.step()
 
-optimizer = optim.Adam(model.parameters(), lr=0.001)
-optimizer.zero_grad()  
-loss.backward()      
-optimizer.step()
+def train(model,train_csv,device,epochs=10, batch_size=16):
+    train_set = StomataDataset(csv_file=train_csv,
+                                    root_dir=os.path.dirname(train_csv),
+                                    transform = data_transform)
+    trainloader = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=0) # In the past my machine has been bad with multiple workers
+    optimizer = optim.Adam(model.parameters(), lr=0.001)
+    loss_fn = nn.BCELoss()
+
+    for epoch in range(epochs):
+        model.train()
+        running_loss = 0.0
+        for image, labels in trainloader:
+            input, target = image.to(device), labels.to(device)
+            output = model(input) # Forward pass
+        
+            loss = loss_fn(output, target)
+            
+            optimizer.zero_grad()  # Backwards pass
+            loss.backward()      
+            optimizer.step()
+
+            running_loss += loss.item()
+
+        avg_loss = running_loss / len(trainloader)
+        print(f"Epoch {epoch + 1}/{epochs}, Loss: {avg_loss:.4f}")
+    print("traning complete")

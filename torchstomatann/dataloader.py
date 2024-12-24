@@ -28,7 +28,7 @@ class StomataDataset(Dataset):
             transform (callable, optional): Optional transform to be applied
                 on a sample.
         """
-        self.annotations = pd.read_csv(csv_file)
+        self.annotations = pd.read_csv(csv_file) #data/faces/face_landmarks.csv
         self.root_dir = root_dir
         self.transform = transform
 
@@ -39,26 +39,24 @@ class StomataDataset(Dataset):
         if torch.is_tensor(idx):
             idx = idx.tolist()
 
-        img_name = os.path.join(self.root_dir,    # These next three lines could be cut to one or two?
+        img_name = os.path.join(self.root_dir,
                                 self.annotations.iloc[idx, 0])
-        image = io.imread(img_name)
-        image = Image.fromarray(image).convert("RGB")
+        image = Image.open(img_name).convert("RGB")
         landmarks = self.annotations.iloc[idx, 1:]
         landmarks = np.array([landmarks], dtype=float).reshape(-1, 2)
-        sample = {'image': image, 'landmarks': landmarks}
+        # sample = {'image': image, 'landmarks': landmarks}
 
         if self.transform:
             image = self.transform(image)
-        sample = {'image': image, 'landmarks': landmarks}
+        # sample = {'image': image, 'landmarks': landmarks}
 
-        return sample
+        return image, landmarks
 
 data_transform = transforms.Compose([
-        transforms.Resize(100),          # Need to change when applying to image j images
+        transforms.Resize((100,100)), # Need to change when applying to image j images since they are different sizes and proportions
         transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                             std=[0.229, 0.224, 0.225])
+        transforms.Normalize((0.5,), (0.5,))
     ])
 
 train_set = StomataDataset(csv_file='data/faces/face_landmarks.csv',
@@ -73,9 +71,9 @@ trainloader = DataLoader(train_set, batch_size=16, shuffle=True, num_workers=0) 
 testloader = DataLoader(test_set, batch_size=16, shuffle=False, num_workers=0)
 
 # Test/debug
-for images, labels in trainloader:
-    print(images.shape, labels.shape) 
-    break
+# for image, labels in trainloader:
+#     print(image.shape, labels.shape) 
+#     break
 
 
 # for i, sample in enumerate(dataset):
