@@ -6,6 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms, utils, datasets
+from PIL import Image
 
 points_frame = pd.read_csv('data/faces/face_landmarks.csv')
 
@@ -38,9 +39,10 @@ class StomataDataset(Dataset):
         if torch.is_tensor(idx):
             idx = idx.tolist()
 
-        img_name = os.path.join(self.root_dir,
+        img_name = os.path.join(self.root_dir,    # These next three lines could be cut to one or two?
                                 self.annotations.iloc[idx, 0])
         image = io.imread(img_name)
+        image = Image.fromarray(image).convert("RGB")
         landmarks = self.annotations.iloc[idx, 1:]
         landmarks = np.array([landmarks], dtype=float).reshape(-1, 2)
         sample = {'image': image, 'landmarks': landmarks}
@@ -67,8 +69,8 @@ test_set = StomataDataset(csv_file='data/faces/face_landmarks.csv',
                                     root_dir='data/faces/',
                                     transform = data_transform)
 
-trainloader = DataLoader(train_set, batch_size=16, shuffle=True, num_workers=1) # In the past my machine has been bad with multiple workers
-testloader = DataLoader(test_set, batch_size=16, shuffle=False, num_workers=1)
+trainloader = DataLoader(train_set, batch_size=16, shuffle=True, num_workers=0) # In the past my machine has been bad with multiple workers
+testloader = DataLoader(test_set, batch_size=16, shuffle=False, num_workers=0)
 
 # Test/debug
 for images, labels in trainloader:
