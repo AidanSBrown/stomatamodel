@@ -127,7 +127,7 @@ def train(model,train_csv,device,epochs=10, batch_size=16):
 model = Stomatann().to(device)
 
 model = train(model,"data/faces/face_landmarks_train.csv",device)
-torch.save(model, "models/testingmodel.pth")
+torch.save(model.state_dict(), "models/testingmodel.pth")
 
 def predict(model, image, device):
     model.eval()

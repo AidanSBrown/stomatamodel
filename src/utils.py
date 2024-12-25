@@ -7,7 +7,7 @@ import pandas as pd
 
 def landmarks_to_mask(image, landmarks):
     """
-    Convert a list of landmark points into a binary mask for the model
+    Convert a list of landmark points on an image into a binary mask for the model
     Args:
         image: Path to image, assuming is in the same root directory
         landmarks (list): List of landmark points representing the outline of the stomata, 
@@ -15,7 +15,7 @@ def landmarks_to_mask(image, landmarks):
     Returns:
         torch.Tensor: Binary mask of the stomata.
     """
-    image_size = Image.open(image).size
+    image_size = Image.open(image).size[::-1]  # to height, width for numpy
     mask = np.zeros(image_size, dtype=np.uint8)
 
     landmarks = np.array(landmarks, dtype=np.int32)

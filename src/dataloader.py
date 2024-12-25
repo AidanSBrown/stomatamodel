@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms, utils, datasets
 from PIL import Image
+from utils import landmarks_to_mask
 
 def show_landmarks(image, landmarks):
     """Show image with landmarks"""
@@ -42,13 +43,12 @@ class StomataDataset(Dataset):
         image = Image.open(img_name).convert("RGB")
         landmarks = self.annotations.iloc[idx, 1:]
         landmarks = np.array([landmarks], dtype=float).reshape(-1, 2)
-        # sample = {'image': image, 'landmarks': landmarks}
+        stomatamask = landmarks_to_mask(img_name,landmarks)
 
         if self.transform:
             image = self.transform(image)
-        # sample = {'image': image, 'landmarks': landmarks}
-
-        return image, landmarks
+        
+        return image, stomatamask
 
 data_transform = transforms.Compose([
         transforms.Resize((800,800)), # May cause runtime error due to different tensor sizes in encoder and decoder
