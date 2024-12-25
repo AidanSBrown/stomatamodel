@@ -1,5 +1,6 @@
 import os
 import torch
+import cv2
 from torch import nn
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
@@ -54,26 +55,22 @@ class Stomatann(nn.Module):
         enc3 = self.enc3(F.max_pool2d(enc2, 2))
         enc4 = self.enc4(F.max_pool2d(enc3, 2))
 
-        # Bottleneck
         center = self.center(F.max_pool2d(enc4, 2))
 
-        # Decoder path
         dec4 = self.dec4(F.interpolate(center, scale_factor=2, mode='bilinear', align_corners=True))
-        dec4 = dec4 + enc4  # Skip connection
+        dec4 = dec4 + enc4 
 
-        dec3 = self.dec3(F.interpolate(center, scale_factor=2, mode='bilinear', align_corners=True))
+        dec3 = self.dec3(F.interpolate(dec4, scale_factor=2, mode='bilinear', align_corners=True))
         dec3 = dec3 + enc3
-
-        dec2 = self.dec2(F.interpolate(center, scale_factor=2, mode='bilinear', align_corners=True))
+        
+        dec2 = self.dec2(F.interpolate(dec3, scale_factor=2, mode='bilinear', align_corners=True))
         dec2 = dec2 + enc2
-
-        dec1 = self.dec1(F.interpolate(center, scale_factor=2, mode='bilinear', align_corners=True))
+        
+        dec1 = self.dec1(F.interpolate(dec2, scale_factor=2, mode='bilinear', align_corners=True))
         dec1 = dec1 + enc1
-
+   
         output = torch.sigmoid(self.final(dec1))
         return output
-
-model = Stomatann().to(device)
 
 #                            Reading block                           #
 # print(model)
@@ -103,7 +100,7 @@ def train(model,train_csv,device,epochs=10, batch_size=16):
                                     transform = data_transform)
     trainloader = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=0) # In the past my machine has been bad with multiple workers
     optimizer = optim.Adam(model.parameters(), lr=0.001)
-    loss_fn = nn.BCELoss()
+    loss_fn = nn.BCEWithLogitsLoss()
 
     for epoch in range(epochs):
         model.train()
@@ -122,4 +119,22 @@ def train(model,train_csv,device,epochs=10, batch_size=16):
 
         avg_loss = running_loss / len(trainloader)
         print(f"Epoch {epoch + 1}/{epochs}, Loss: {avg_loss:.4f}")
-    print("traning complete")
+    print("Traning complete")
+    return model
+
+#### Example use ####
+
+model = Stomatann().to(device)
+
+model = train(model,"data/faces/face_landmarks_train.csv",device)
+torch.save(model, "models/testingmodel.pth")
+
+def predict(model, image, device):
+    model.eval()
+    image = image.to(device).unsqueeze(0)  
+    with torch.no_grad():
+        output = model(image)
+
+    # Sigmoid fn to get probabilities and then threshold to get binary mask
+    mask = torch.sigmoid(output) > 0.5
+    return mask.squeeze(0)  # Remove batch dimension

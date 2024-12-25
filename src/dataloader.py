@@ -51,19 +51,19 @@ class StomataDataset(Dataset):
         return image, landmarks
 
 data_transform = transforms.Compose([
-        transforms.Resize((100,100)), # Need to change when applying to image j images since they are different sizes and proportions
+        transforms.Resize((800,800)), # May cause runtime error due to different tensor sizes in encoder and decoder
         transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
         transforms.Normalize((0.5,), (0.5,))
     ])
 
-train_set = StomataDataset(csv_file='data/faces/face_landmarks.csv',
-                                    root_dir='data/faces/',
-                                    transform = data_transform)
+# train_set = StomataDataset(csv_file='data/faces/face_landmarks.csv',
+#                                     root_dir='data/faces/',
+#                                     transform = data_transform)
 
-test_set = StomataDataset(csv_file='data/faces/face_landmarks.csv',
-                                    root_dir='data/faces/',
-                                    transform = data_transform)
+# test_set = StomataDataset(csv_file='data/faces/face_landmarks.csv',
+#                                     root_dir='data/faces/',
+#                                     transform = data_transform)
 
 # trainloader = DataLoader(train_set, batch_size=16, shuffle=True, num_workers=0) # In the past my machine has been bad with multiple workers
 # testloader = DataLoader(test_set, batch_size=16, shuffle=False, num_workers=0)
