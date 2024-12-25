@@ -81,10 +81,10 @@ model = Stomatann().to(device)
 # print(len(params))
 # print(params[0].size())  
 
-input = torch.randn(1, 3, 256, 256)  # Example input
-target = torch.randn(1, 1, 256, 256)  # Example target
-input = input.to(device)
-target = target.to(device)
+# input = torch.randn(1, 3, 256, 256)  # Example input
+# target = torch.randn(1, 1, 256, 256)  # Example target
+# input = input.to(device)
+# target = target.to(device)
 
 # output = model(input) # Forward pass
 # loss_fn = nn.BCELoss()

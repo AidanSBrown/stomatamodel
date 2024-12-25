@@ -8,8 +8,6 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms, utils, datasets
 from PIL import Image
 
-points_frame = pd.read_csv('data/faces/face_landmarks.csv')
-
 def show_landmarks(image, landmarks):
     """Show image with landmarks"""
     plt.imshow(image)
@@ -67,8 +65,8 @@ test_set = StomataDataset(csv_file='data/faces/face_landmarks.csv',
                                     root_dir='data/faces/',
                                     transform = data_transform)
 
-trainloader = DataLoader(train_set, batch_size=16, shuffle=True, num_workers=0) # In the past my machine has been bad with multiple workers
-testloader = DataLoader(test_set, batch_size=16, shuffle=False, num_workers=0)
+# trainloader = DataLoader(train_set, batch_size=16, shuffle=True, num_workers=0) # In the past my machine has been bad with multiple workers
+# testloader = DataLoader(test_set, batch_size=16, shuffle=False, num_workers=0)
 
 # Test/debug
 # for image, labels in trainloader:
