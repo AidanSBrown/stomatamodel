@@ -8,6 +8,8 @@ import numpy as np
 import torch.nn.functional as F
 import torch.optim as optim
 from dataloader import StomataDataset, data_transform
+import matplotlib.pyplot as plt
+from PIL import Image
 
 # Set GPU or CPU
 device = (
@@ -103,7 +105,7 @@ def train(model,train_csv,device,epochs=1, batch_size=16):
     loss_fn = nn.BCEWithLogitsLoss()
 
     for epoch in range(epochs):
-        model.train() # Is this necessary?
+        model.train()
         running_loss = 0.0
         for image, labels in trainloader:
             input, target = image.to(device), labels.to(device)
@@ -125,17 +127,42 @@ def train(model,train_csv,device,epochs=1, batch_size=16):
     return model
 
 #### Example use ####
+# model = Stomatann().to(device)
+# model = train(model,"data/faces/face_landmarks_test.csv",device)
+# torch.save(model.state_dict(), "models/testingmodel.pth")
 
-model = Stomatann().to(device)
-model = train(model,"data/faces/face_landmarks_test.csv",device)
-torch.save(model.state_dict(), "models/testingmodel.pth")
-
-def predict(model, image, device):
+def predict(model_path, image_path = str, device = "cpu", show=True):
+    """
+    Predict on an image 
+    args: 
+        model: Path to pth model to load and make predictions
+        image: Path to image to predict on
+        device: Default cpu 
+    """
+    model = Stomatann().to(device)
+    model = model.load_state_dict(torch.load(model_path))
     model.eval()
-    image = image.to(device).unsqueeze(0)  
+
+    image = Image.open(image_path)
+    image = image.to(device).unsqueeze(0)
+
     with torch.no_grad():
         output = model(image)
 
     # Sigmoid fn to get probabilities and then threshold to get binary mask
     mask = torch.sigmoid(output) > 0.5
-    return mask.squeeze(0)  # Remove batch dimension
+    if show:
+        print("Showing image prediction")
+        mask = mask.numpy().squeeze(0)
+        plt.imshow(image)
+        plt.imshow(mask, alpha=0.5, cmap='viridis')
+        plt.colorbar(label='Mask Intensity')
+        plt.axis('off')
+        plt.title('Predicted stomata')
+        plt.show()
+
+    else:
+        return mask.squeeze(0)  # Remove batch dimension
+
+predict(model_path='models/testingmodel.pth',
+        image_path = 'data/faces/0805personali01.jpg')
