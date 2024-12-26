@@ -94,7 +94,7 @@ class Stomatann(nn.Module):
 # loss.backward()      
 # optimizer.step()
 
-def train(model,train_csv,device,epochs=10, batch_size=16):
+def train(model,train_csv,device,epochs=1, batch_size=16):
     train_set = StomataDataset(csv_file=train_csv,
                                     root_dir=os.path.dirname(train_csv),
                                     transform = data_transform)
@@ -103,10 +103,12 @@ def train(model,train_csv,device,epochs=10, batch_size=16):
     loss_fn = nn.BCEWithLogitsLoss()
 
     for epoch in range(epochs):
-        model.train()
+        model.train() # Is this necessary?
         running_loss = 0.0
         for image, labels in trainloader:
             input, target = image.to(device), labels.to(device)
+            target = target.unsqueeze(0)  # To resolve tensor size mismatch
+
             output = model(input) # Forward pass
         
             loss = loss_fn(output, target)
@@ -125,8 +127,7 @@ def train(model,train_csv,device,epochs=10, batch_size=16):
 #### Example use ####
 
 model = Stomatann().to(device)
-
-model = train(model,"data/faces/face_landmarks_train.csv",device)
+model = train(model,"data/faces/face_landmarks_test.csv",device)
 torch.save(model.state_dict(), "models/testingmodel.pth")
 
 def predict(model, image, device):

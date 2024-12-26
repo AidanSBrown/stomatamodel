@@ -8,6 +8,8 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms, utils, datasets
 from PIL import Image
 from utils import landmarks_to_mask
+from torchvision.transforms import functional as F
+
 
 def show_landmarks(image, landmarks):
     """Show image with landmarks"""
@@ -19,7 +21,7 @@ def show_landmarks(image, landmarks):
 class StomataDataset(Dataset):
     """Stomata Landmarks dataset."""
 
-    def __init__(self, csv_file, root_dir, transform=None):
+    def __init__(self, csv_file, root_dir, target_size = 2000, transform=None):
         """
         Arguments:
             csv_file (string): Path to the csv file with annotations.
@@ -30,6 +32,7 @@ class StomataDataset(Dataset):
         self.annotations = pd.read_csv(csv_file) #data/faces/face_landmarks.csv
         self.root_dir = root_dir
         self.transform = transform
+        self.target_size = target_size
 
     def __len__(self):
         return len(self.annotations)
@@ -41,17 +44,35 @@ class StomataDataset(Dataset):
         img_name = os.path.join(self.root_dir,
                                 self.annotations.iloc[idx, 0])
         image = Image.open(img_name).convert("RGB")
+
         landmarks = self.annotations.iloc[idx, 1:]
         landmarks = np.array([landmarks], dtype=float).reshape(-1, 2)
         stomatamask = landmarks_to_mask(img_name,landmarks)
+        stomatamask = stomatamask.squeeze(0).squeeze(0)
 
+        try: 
+            image = F.resize(image, [self.target_size, self.target_size])
+            stomatamask = stomatamask.unsqueeze(0).unsqueeze(0) 
+            stomatamask = torch.nn.functional.interpolate(stomatamask, size=(self.target_size, self.target_size), 
+                                                mode="bilinear", 
+                                                align_corners=False)
+            stomatamask = stomatamask.squeeze(0).squeeze(0)
+        except RuntimeError as e: # If image too large (dataset images smaller than specified)
+            print(f"Target size of size {self.target_size} too large, changing target size")
+            image.thumbnail((self.target_size, self.target_size), Image.Resampling.LANCZOS)
+            stomatamask = stomatamask.unsqueeze(0).unsqueeze(0)
+            stomatamask = torch.nn.functional.interpolate(stomatamask,
+                                                              size=(self.target_size, 
+                                                              self.target_size), 
+                                                              mode="bilinear", 
+                                                              align_corners=False)
+            stomatamask = stomatamask.squeeze(0).squeeze(0)
         if self.transform:
             image = self.transform(image)
         
         return image, stomatamask
 
 data_transform = transforms.Compose([
-        transforms.Resize((800,800)), # May cause runtime error due to different tensor sizes in encoder and decoder
         transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
         transforms.Normalize((0.5,), (0.5,))
