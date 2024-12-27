@@ -5,11 +5,13 @@ from torch import nn
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 import numpy as np
+from torchvision.transforms import functional as func 
 import torch.nn.functional as F
 import torch.optim as optim
 from dataloader import StomataDataset, data_transform
 import matplotlib.pyplot as plt
 from PIL import Image
+from utils import landmarks_to_mask, PadToDivisible
 
 # Set GPU or CPU
 device = (
@@ -131,7 +133,7 @@ def train(model,train_csv,device,epochs=1, batch_size=16):
 # model = train(model,"data/faces/face_landmarks_test.csv",device)
 # torch.save(model.state_dict(), "models/testingmodel.pth")
 
-def predict(model_path, image_path = str, device = "cpu", show=True):
+def predict(model_path, image_path=str, device="cpu", show=True, image_size=2000):
     """
     Predict on an image 
     args: 
@@ -140,11 +142,20 @@ def predict(model_path, image_path = str, device = "cpu", show=True):
         device: Default cpu 
     """
     model = Stomatann().to(device)
-    model = model.load_state_dict(torch.load(model_path))
+    model.load_state_dict(torch.load(model_path))
     model.eval()
 
     image = Image.open(image_path)
-    image = image.to(device).unsqueeze(0)
+    # try: # Should check if this is really necessary        # In case need of resizing?
+    #     image = F.resize(image, [image_size, image_size])
+    # except RuntimeError as e:
+    #     print(f"Target size of size {image_size} too large, changing target size")
+    #     image.thumbnail((image_size,image_size), Image.Resampling.LANCZOS)
+    image = func.pil_to_tensor(image).float()
+    image = image.to(device).unsqueeze(0) 
+    transform = transforms.Compose([
+        PadToDivisible(divisor=32),]) # To prevent tensor size mismatch error
+    image = transform(image)
 
     with torch.no_grad():
         output = model(image)
@@ -153,7 +164,10 @@ def predict(model_path, image_path = str, device = "cpu", show=True):
     mask = torch.sigmoid(output) > 0.5
     if show:
         print("Showing image prediction")
-        mask = mask.numpy().squeeze(0)
+        mask = mask.numpy().squeeze(0).squeeze(0)
+        image = image.numpy().squeeze().squeeze()
+        if image.ndim == 3:  # [C, H, W]
+            image = image.transpose(1, 2, 0)
         plt.imshow(image)
         plt.imshow(mask, alpha=0.5, cmap='viridis')
         plt.colorbar(label='Mask Intensity')

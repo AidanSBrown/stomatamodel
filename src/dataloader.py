@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms, utils, datasets
 from PIL import Image
-from utils import landmarks_to_mask
+from utils import landmarks_to_mask, PadToDivisible
 from torchvision.transforms import functional as F
 
 
@@ -47,6 +47,7 @@ class StomataDataset(Dataset):
 
         landmarks = self.annotations.iloc[idx, 1:]
         landmarks = np.array([landmarks], dtype=float).reshape(-1, 2)
+
         stomatamask = landmarks_to_mask(img_name,landmarks)
         stomatamask = stomatamask.squeeze(0).squeeze(0)
 
@@ -75,6 +76,7 @@ class StomataDataset(Dataset):
 data_transform = transforms.Compose([
         transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
+        PadToDivisible(divisor=32), # To prevent tensor size mismatch error
         transforms.Normalize((0.5,), (0.5,))
     ])
 

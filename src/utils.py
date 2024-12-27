@@ -4,6 +4,7 @@ import cv2
 import torch
 import matplotlib.pyplot as plt
 import pandas as pd
+import torch.nn.functional as func
 
 def landmarks_to_mask(image, landmarks):
     """
@@ -28,3 +29,27 @@ def landmarks_to_mask(image, landmarks):
 # mask = landmarks_to_mask(image, landmarks)
 # plt.imshow(mask, cmap='gray')
 # plt.show()
+
+class PadToDivisible:
+    def __init__(self, divisor=32):
+        self.divisor = divisor
+
+    def __call__(self, image):
+        if isinstance(image, torch.Tensor):
+            if len(image.shape) == 4:  # [B, C, H, W]
+                _, _, h, w = image.shape
+            elif len(image.shape) == 3:  # [C, H, W]
+                _, h, w = image.shape
+            else:
+                raise ValueError(f"Unexpected tensor shape: {image.shape}")
+        else:  # Assuming PIL image
+            w, h = image.size  
+
+        pad_h = (self.divisor - h % self.divisor) % self.divisor
+        pad_w = (self.divisor - w % self.divisor) % self.divisor
+
+        if isinstance(image, torch.Tensor):
+            return func.pad(image, (0, pad_w, 0, pad_h))  
+        else:
+            from PIL import ImageOps
+            return ImageOps.expand(image, border=(0, 0, pad_w, pad_h), fill=0)
