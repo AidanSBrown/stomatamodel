@@ -7,6 +7,7 @@ import pandas as pd
 import torch.nn.functional as func
 import geopandas as gpd
 import pandas as pd
+import shapely
 
 def landmarks_to_mask(image, landmarks):
     """
@@ -56,34 +57,42 @@ class PadToDivisible:
             from PIL import ImageOps
             return ImageOps.expand(image, border=(0, 0, pad_w, pad_h), fill=0)
 
-def shptocsv(shapefile_path, outpath):
+def shptocsv(shapefile_path, outpath, flipyaxis = True):
     """
     Convert shapefile of annotations 
     """
-
-    df = gpd.read_file(shapefile_path)
-    print(df.head())
-
-    if not df.geometry.geom_type.isin(["Polygon", "MultiPolygon"]).all():
-        raise ValueError("The shapefile contains unsupported geometry types. Expected multipolygon")
-
-    columns = [f"x{i}" if i % 2 != 0 else f"y{i // 2}" for i in range(1, 20 * 2 + 1)]
-    df[columns] = pd.DataFrame(df.geometry.apply(lambda geom: extract_points(geom)).tolist(), index=df.index)
-
-    # Save to CSV
-    columns_to_save = columns + [col for col in df.columns if col not in ["geometry"]]
-    df[columns_to_save].to_csv(outpath, index=False)
-
-def extract_points(geometry, max_points=20):
-    if geometry.is_empty or geometry is None:
-        return [None] * (max_points * 2)
+    gdf = gpd.read_file(shapefile_path)
     
-    # Extract coordinates from the exterior ring of the polygon
-    coords = list(geometry.exterior.coords)[:max_points]
-    flat_coords = [coord for point in coords for coord in point]  # Flatten to x1, y1, x2, y2, ...
+    rows = []
     
-    # Pad with None if fewer than max_points
-    return flat_coords + [None] * (max_points * 2 - len(flat_coords))
+    for idx, geom in enumerate(gdf.geometry):
+        if geom.is_empty or geom.geom_type != "Polygon":
+            continue
+        
+        coords = list(geom.exterior.coords)
+        
+        coords = coords[:20]
+        
+        flattened = [coord for point in coords for coord in point]
+        row = flattened + [None] * (2 * 20 - len(flattened))  
+        row.insert(0,idx) 
+        
+        rows.append(row)
+
+    columns = ["id"] + [f"{xy}{i}" for i in range(1, 20 + 1) for xy in ("x", "y")]
+    
+    df = pd.DataFrame(rows, columns=columns)
+    df.dropna(how='all')
+    
+    if flipyaxis:
+        y_columns = [f'y{i}' for i in range(1, 21)]
+        try:
+            for col in y_columns:
+                df[col] = df[col].apply(lambda x: -x if x < 0 else x)
+        except TypeError as e:
+            pass
+
+    df.to_csv(outpath, index=False,na_rep="") # na rep supposed to exclude trailing commas but doesn't work
 
 shptocsv('/Users/aidanbrown/Desktop/brownsville/stomata_train_01.shp','data/testcsv.csv')
 
