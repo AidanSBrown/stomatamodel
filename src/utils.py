@@ -5,6 +5,8 @@ import torch
 import matplotlib.pyplot as plt
 import pandas as pd
 import torch.nn.functional as func
+import geopandas as gpd
+import pandas as pd
 
 def landmarks_to_mask(image, landmarks):
     """
@@ -53,3 +55,36 @@ class PadToDivisible:
         else:
             from PIL import ImageOps
             return ImageOps.expand(image, border=(0, 0, pad_w, pad_h), fill=0)
+
+def shptocsv(shapefile_path, outpath):
+    """
+    Convert shapefile of annotations 
+    """
+
+    df = gpd.read_file(shapefile_path)
+    print(df.head())
+
+    if not df.geometry.geom_type.isin(["Polygon", "MultiPolygon"]).all():
+        raise ValueError("The shapefile contains unsupported geometry types. Expected multipolygon")
+
+    columns = [f"x{i}" if i % 2 != 0 else f"y{i // 2}" for i in range(1, 20 * 2 + 1)]
+    df[columns] = pd.DataFrame(df.geometry.apply(lambda geom: extract_points(geom)).tolist(), index=df.index)
+
+    # Save to CSV
+    columns_to_save = columns + [col for col in df.columns if col not in ["geometry"]]
+    df[columns_to_save].to_csv(outpath, index=False)
+
+def extract_points(geometry, max_points=20):
+    if geometry.is_empty or geometry is None:
+        return [None] * (max_points * 2)
+    
+    # Extract coordinates from the exterior ring of the polygon
+    coords = list(geometry.exterior.coords)[:max_points]
+    flat_coords = [coord for point in coords for coord in point]  # Flatten to x1, y1, x2, y2, ...
+    
+    # Pad with None if fewer than max_points
+    return flat_coords + [None] * (max_points * 2 - len(flat_coords))
+
+shptocsv('/Users/aidanbrown/Desktop/brownsville/stomata_train_01.shp','data/testcsv.csv')
+
+
