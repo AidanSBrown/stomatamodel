@@ -8,6 +8,7 @@ import torch.nn.functional as func
 import geopandas as gpd
 import pandas as pd
 import shapely
+import os
 
 def landmarks_to_mask(image, landmarks):
     """
@@ -57,7 +58,7 @@ class PadToDivisible:
             from PIL import ImageOps
             return ImageOps.expand(image, border=(0, 0, pad_w, pad_h), fill=0)
 
-def shptocsv(shapefile_path, outpath, flipyaxis = True):
+def shptocsv(shapefile_path, image_path, outpath, flipyaxis = True):
     """
     Convert shapefile of annotations 
     """
@@ -74,17 +75,15 @@ def shptocsv(shapefile_path, outpath, flipyaxis = True):
         coords = coords[:20]
         
         flattened = [coord for point in coords for coord in point]
-        row = flattened + [None] * (2 * 20 - len(flattened))  
-        row.insert(0,idx) 
-        
+        row = flattened + [None] * (2 * 20 - len(flattened))   
         rows.append(row)
 
-    columns = ["id"] + [f"{xy}{i}" for i in range(1, 20 + 1) for xy in ("x", "y")]
+    columns = [f"{xy}{i}" for i in range(1, 21) for xy in ("x", "y")]
     
     df = pd.DataFrame(rows, columns=columns)
     df.dropna(how='all')
     
-    if flipyaxis:
+    if flipyaxis: # QGIS y axis flipped for images without geographic data
         y_columns = [f'y{i}' for i in range(1, 21)]
         try:
             for col in y_columns:
@@ -92,8 +91,7 @@ def shptocsv(shapefile_path, outpath, flipyaxis = True):
         except TypeError as e:
             pass
 
+    df.insert(0, "image_name", os.path.basename(image_path))
     df.to_csv(outpath, index=False,na_rep="") # na rep supposed to exclude trailing commas but doesn't work
 
-shptocsv('/Users/aidanbrown/Desktop/brownsville/stomata_train_01.shp','data/testcsv.csv')
-
-
+# shptocsv('/Users/aidanbrown/Desktop/brownsville/stomata_train_05.shp','/Users/aidanbrown/Desktop/brownsville/BRO_PINTAE_Train5.png','data/train5.csv')

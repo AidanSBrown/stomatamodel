@@ -23,7 +23,6 @@ device = (
 )
 print(f"Using {device}")
 
-# Initialize model
 class Stomatann(nn.Module):
     def __init__(self):
         super(Stomatann,self).__init__()
@@ -42,10 +41,10 @@ class Stomatann(nn.Module):
         self.dec2 = self.conv_block(256, 128)
         self.dec1 = self.conv_block(128, 64)
 
-        # Final output layer (Binary mask)
+        # Binary mask
         self.final = nn.Conv2d(64, 1, kernel_size=1)
     
-    def conv_block(self, in_channels, out_channels): # Conv block is for repeatability when having multiple convolutionary layers
+    def conv_block(self, in_channels, out_channels):
         return nn.Sequential(
             nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1),
             nn.ReLU(inplace=True),
@@ -82,22 +81,6 @@ class Stomatann(nn.Module):
 # print(len(params))
 # print(params[0].size())  
 
-# input = torch.randn(1, 3, 256, 256)  # Example input
-# target = torch.randn(1, 1, 256, 256)  # Example target
-# input = input.to(device)
-# target = target.to(device)
-
-# output = model(input) # Forward pass
-# loss_fn = nn.BCELoss()
-
-# loss = loss_fn(output, target)
-# print(loss)
-
-# optimizer = optim.Adam(model.parameters(), lr=0.001)
-# optimizer.zero_grad()  
-# loss.backward()      
-# optimizer.step()
-
 def train(model,train_csv,device,epochs=1, batch_size=16):
     train_set = StomataDataset(csv_file=train_csv,
                                     root_dir=os.path.dirname(train_csv),
@@ -128,9 +111,9 @@ def train(model,train_csv,device,epochs=1, batch_size=16):
     print("Traning complete")
     return model
 
-#### Example use ####
+#### Example training use ####
 # model = Stomatann().to(device)
-# model = train(model,"data/faces/face_landmarks_test.csv",device)
+# model = train(model,"data/train1.csv",device)
 # torch.save(model.state_dict(), "models/testingmodel.pth")
 
 def predict(model_path, image_path=str, device="cpu", show=True, image_size=2000):
@@ -178,5 +161,6 @@ def predict(model_path, image_path=str, device="cpu", show=True, image_size=2000
     else:
         return mask.squeeze(0)  # Remove batch dimension
 
-predict(model_path='models/testingmodel.pth',
-        image_path = 'data/faces/0805personali01.jpg')
+#### Example Predict Use ####
+# predict(model_path='models/testingmodel.pth',
+#         image_path = 'data/faces/0805personali01.jpg')
