@@ -59,20 +59,48 @@ class Stomatann(nn.Module):
 
         center = self.center(F.max_pool2d(enc4, 2))
 
-        dec4 = self.dec4(F.interpolate(center, scale_factor=2, mode='nearest'))
+        dec4 = self.dec4(F.interpolate(center, scale_factor=2, mode='bilinear', align_corners=True))
         dec4 = dec4 + enc4 
 
-        dec3 = self.dec3(F.interpolate(dec4, scale_factor=2, mode='nearest'))
+        dec3 = self.dec3(F.interpolate(dec4, scale_factor=2, mode='bilinear', align_corners=True))
         dec3 = dec3 + enc3
         
-        dec2 = self.dec2(F.interpolate(dec3, scale_factor=2, mode='nearest'))
+        dec2 = self.dec2(F.interpolate(dec3, scale_factor=2, mode='bilinear', align_corners=True))
         dec2 = dec2 + enc2
         
-        dec1 = self.dec1(F.interpolate(dec2, scale_factor=2, mode='nearest'))
+        dec1 = self.dec1(F.interpolate(dec2, scale_factor=2, mode='bilinear', align_corners=True))
         dec1 = dec1 + enc1
    
         output = torch.sigmoid(self.final(dec1))
         return output
+
+class StomataMiniModel(nn.Module):
+    def __init__(self):
+        super(StomataMiniModel,self).__init__()
+    
+        self.conv1 = nn.Conv2d(3, 16, kernel_size=3, padding=1) 
+        self.conv2 = nn.Conv2d(16, 32, kernel_size=3, padding=1)
+        self.pool = nn.MaxPool2d(kernel_size=2, stride=2)     
+
+        self.bottleneck = nn.Conv2d(32, 64, kernel_size=3, padding=1)
+
+        self.upconv1 = nn.ConvTranspose2d(64, 32, kernel_size=2, stride=2) 
+        self.conv3 = nn.Conv2d(32, 16, kernel_size=3, padding=1)
+        self.conv4 = nn.Conv2d(16, 1, kernel_size=1)   
+        
+    def forward(self,x):
+        x = F.relu(self.conv1(x))
+        x = F.relu(self.conv2(x))
+        x = self.pool(x)
+
+        x = F.relu(self.bottleneck(x))
+
+        x = F.relu(self.upconv1(x))
+        x = F.relu(self.conv3(x))
+        x = torch.sigmoid(self.conv4(x)) # Binary mask range [0,1]
+
+        return x
+
 
 #                            Reading block                           #
 # print(model)
@@ -85,7 +113,7 @@ def train(model,train_csv,device,epochs=5, batch_size=16):
                                     root_dir=os.path.dirname(train_csv),
                                     transform = data_transform)
     trainloader = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=0) # In the past my machine has been bad with multiple workers
-    optimizer = optim.Adam(model.parameters(), lr=0.001)
+    optimizer = optim.Adam(model.parameters(), lr=0.01)
     loss_fn = nn.BCEWithLogitsLoss()
 
     start_time = time.time()
@@ -115,8 +143,8 @@ def train(model,train_csv,device,epochs=5, batch_size=16):
     return model
 
 #### Example training use ####
-# model = Stomatann().to(device)
-# model = train(model,"data/train1.csv",device,batch_size=8,epochs=5)
+# model = StomataMiniModel().to(device)
+# model = train(model,"data/train1.csv",device,batch_size=8,epochs=1)
 # torch.save(model.state_dict(), "models/stomatamodel_v1.pth")
 
 def predict(model_path, image_path=str, device="cpu", show=True, image_size=512):
@@ -127,7 +155,7 @@ def predict(model_path, image_path=str, device="cpu", show=True, image_size=512)
         image: Path to image to predict on
         device: Default cpu 
     """
-    model = Stomatann().to(device)
+    model = StomataMiniModel().to(device)
     model.load_state_dict(torch.load(model_path))
     model.eval()
 
@@ -165,5 +193,5 @@ def predict(model_path, image_path=str, device="cpu", show=True, image_size=512)
         return mask.squeeze(0)  # Remove batch dimension
 
 #### Example Predict Use ####
-# predict(model_path='models/stomatamodel_v1.pth',
-#         image_path = 'data/BRO_PINTAE_Train5.png')
+predict(model_path='models/stomatamodel_v1.pth',
+        image_path = 'data/BRO_PINTAE_Train5.png')

@@ -55,7 +55,7 @@ class StomataDataset(Dataset):
             image = F.resize(image, [self.target_size, self.target_size])
             stomatamask = stomatamask.unsqueeze(0).unsqueeze(0) 
             stomatamask = torch.nn.functional.interpolate(stomatamask, size=(self.target_size, self.target_size), 
-                                                mode="nearest")
+                                                mode='bilinear', align_corners=True)
             stomatamask = stomatamask.squeeze(0).squeeze(0) 
         except RuntimeError as e: # If image too large (dataset images smaller than specified)
             print(f"Target size of size {self.target_size} too large, changing target size")
@@ -64,7 +64,8 @@ class StomataDataset(Dataset):
             stomatamask = torch.nn.functional.interpolate(stomatamask,
                                                               size=(self.target_size, 
                                                               self.target_size), 
-                                                              mode="nearest")
+                                                              mode='bilinear', 
+                                                              align_corners=True)
             stomatamask = stomatamask.squeeze(0).squeeze(0)
  
         if self.transform:
@@ -74,6 +75,7 @@ class StomataDataset(Dataset):
 
 data_transform = transforms.Compose([
         transforms.RandomHorizontalFlip(),
+        transforms.RandomVerticalFlip(),
         transforms.ToTensor(),
         PadToDivisible(divisor=32), # To prevent tensor size mismatch error
         transforms.Normalize((0.5,), (0.5,))
