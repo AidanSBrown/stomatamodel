@@ -21,7 +21,7 @@ def show_landmarks(image, landmarks):
 class StomataDataset(Dataset):
     """Stomata Landmarks dataset."""
 
-    def __init__(self, csv_file, root_dir, target_size = 2000, transform=None):
+    def __init__(self, csv_file, root_dir, target_size = 512, transform=None):
         """
         Arguments:
             csv_file (string): Path to the csv file with annotations.
@@ -29,7 +29,7 @@ class StomataDataset(Dataset):
             transform (callable, optional): Optional transform to be applied
                 on a sample.
         """
-        self.annotations = pd.read_csv(csv_file) #data/faces/face_landmarks.csv
+        self.annotations = pd.read_csv(csv_file)
         self.root_dir = root_dir
         self.transform = transform
         self.target_size = target_size
@@ -55,9 +55,8 @@ class StomataDataset(Dataset):
             image = F.resize(image, [self.target_size, self.target_size])
             stomatamask = stomatamask.unsqueeze(0).unsqueeze(0) 
             stomatamask = torch.nn.functional.interpolate(stomatamask, size=(self.target_size, self.target_size), 
-                                                mode="bilinear", 
-                                                align_corners=False)
-            stomatamask = stomatamask.squeeze(0).squeeze(0)
+                                                mode="nearest")
+            stomatamask = stomatamask.squeeze(0).squeeze(0) 
         except RuntimeError as e: # If image too large (dataset images smaller than specified)
             print(f"Target size of size {self.target_size} too large, changing target size")
             image.thumbnail((self.target_size, self.target_size), Image.Resampling.LANCZOS)
@@ -65,9 +64,9 @@ class StomataDataset(Dataset):
             stomatamask = torch.nn.functional.interpolate(stomatamask,
                                                               size=(self.target_size, 
                                                               self.target_size), 
-                                                              mode="bilinear", 
-                                                              align_corners=False)
+                                                              mode="nearest")
             stomatamask = stomatamask.squeeze(0).squeeze(0)
+ 
         if self.transform:
             image = self.transform(image)
         
@@ -96,7 +95,7 @@ data_transform = transforms.Compose([
 #     print(image.shape, labels.shape) 
 #     break
 
-
+# Could make this into some function to replot/verify annotations
 # for i, sample in enumerate(dataset):
 #     print(i, sample['image'].shape, sample['landmarks'].shape)
 

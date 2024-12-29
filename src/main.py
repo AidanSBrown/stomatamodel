@@ -60,16 +60,16 @@ class Stomatann(nn.Module):
 
         center = self.center(F.max_pool2d(enc4, 2))
 
-        dec4 = self.dec4(F.interpolate(center, scale_factor=2, mode='bilinear', align_corners=True))
+        dec4 = self.dec4(F.interpolate(center, scale_factor=2, mode='nearest'))
         dec4 = dec4 + enc4 
 
-        dec3 = self.dec3(F.interpolate(dec4, scale_factor=2, mode='bilinear', align_corners=True))
+        dec3 = self.dec3(F.interpolate(dec4, scale_factor=2, mode='nearest'))
         dec3 = dec3 + enc3
         
-        dec2 = self.dec2(F.interpolate(dec3, scale_factor=2, mode='bilinear', align_corners=True))
+        dec2 = self.dec2(F.interpolate(dec3, scale_factor=2, mode='nearest'))
         dec2 = dec2 + enc2
         
-        dec1 = self.dec1(F.interpolate(dec2, scale_factor=2, mode='bilinear', align_corners=True))
+        dec1 = self.dec1(F.interpolate(dec2, scale_factor=2, mode='nearest'))
         dec1 = dec1 + enc1
    
         output = torch.sigmoid(self.final(dec1))
@@ -81,7 +81,7 @@ class Stomatann(nn.Module):
 # print(len(params))
 # print(params[0].size())  
 
-def train(model,train_csv,device,epochs=1, batch_size=16):
+def train(model,train_csv,device,epochs=5, batch_size=16):
     train_set = StomataDataset(csv_file=train_csv,
                                     root_dir=os.path.dirname(train_csv),
                                     transform = data_transform)
@@ -94,7 +94,9 @@ def train(model,train_csv,device,epochs=1, batch_size=16):
         running_loss = 0.0
         for image, labels in trainloader:
             input, target = image.to(device), labels.to(device)
-            target = target.unsqueeze(0)  # To resolve tensor size mismatch
+
+            target = target.unsqueeze(0) # To resolve tensor size mismatch
+            target = target.permute(1, 0, 2, 3)  
 
             output = model(input) # Forward pass
         
@@ -112,9 +114,9 @@ def train(model,train_csv,device,epochs=1, batch_size=16):
     return model
 
 #### Example training use ####
-# model = Stomatann().to(device)
-# model = train(model,"data/train1.csv",device)
-# torch.save(model.state_dict(), "models/testingmodel.pth")
+model = Stomatann().to(device)
+model = train(model,"data/train1.csv",device,batch_size=8,epochs=1)
+torch.save(model.state_dict(), "models/stomatamodel_v1.pth")
 
 def predict(model_path, image_path=str, device="cpu", show=True, image_size=2000):
     """
