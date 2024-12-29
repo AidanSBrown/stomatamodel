@@ -1,10 +1,8 @@
 import os
 import torch
-import cv2
 from torch import nn
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
-import numpy as np
 from torchvision.transforms import functional as func 
 import torch.nn.functional as F
 import torch.optim as optim
@@ -12,6 +10,7 @@ from dataloader import StomataDataset, data_transform
 import matplotlib.pyplot as plt
 from PIL import Image
 from utils import landmarks_to_mask, PadToDivisible
+import time
 
 # Set GPU or CPU
 device = (
@@ -89,6 +88,8 @@ def train(model,train_csv,device,epochs=5, batch_size=16):
     optimizer = optim.Adam(model.parameters(), lr=0.001)
     loss_fn = nn.BCEWithLogitsLoss()
 
+    start_time = time.time()
+
     for epoch in range(epochs):
         model.train()
         running_loss = 0.0
@@ -110,15 +111,15 @@ def train(model,train_csv,device,epochs=5, batch_size=16):
 
         avg_loss = running_loss / len(trainloader)
         print(f"Epoch {epoch + 1}/{epochs}, Loss: {avg_loss:.4f}")
-    print("Traning complete")
+    print(f"Traning complete in {time.time() - start_time}")
     return model
 
 #### Example training use ####
-model = Stomatann().to(device)
-model = train(model,"data/train1.csv",device,batch_size=8,epochs=1)
-torch.save(model.state_dict(), "models/stomatamodel_v1.pth")
+# model = Stomatann().to(device)
+# model = train(model,"data/train1.csv",device,batch_size=8,epochs=5)
+# torch.save(model.state_dict(), "models/stomatamodel_v1.pth")
 
-def predict(model_path, image_path=str, device="cpu", show=True, image_size=2000):
+def predict(model_path, image_path=str, device="cpu", show=True, image_size=512):
     """
     Predict on an image 
     args: 
@@ -164,5 +165,5 @@ def predict(model_path, image_path=str, device="cpu", show=True, image_size=2000
         return mask.squeeze(0)  # Remove batch dimension
 
 #### Example Predict Use ####
-# predict(model_path='models/testingmodel.pth',
-#         image_path = 'data/faces/0805personali01.jpg')
+# predict(model_path='models/stomatamodel_v1.pth',
+#         image_path = 'data/BRO_PINTAE_Train5.png')

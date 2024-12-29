@@ -1,5 +1,13 @@
 # torchstomatann
 
-Practice creating a torch neural network for simple object detection of stomata from slide images. Completed over winter break.
+## Overview
+This project implements a semantic segmentation model for detecting stomata in microscope images using a custom U-Net style of architecture. The model produces a binary masks that highlight stomata locations. 
 
-This is a semantic segmentation model that predicts stomata in an image. The model is a custom neural network built with pytorch, its structure is loosely based off of U-NET
+## Utilities
+This repository includes a few rudimentary utilities to help with the annotation to training pipeline
+
+![Sample Slide Image (Pinus taeda)](data/BRO_PINTAE_Train5.png)
+![Sample Slide Image (Ilex opaca)](data/BRO_ILEOPA_Train3.tif)
+
+## Results/Predictions
+(TBD)
