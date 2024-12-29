@@ -114,7 +114,7 @@ def train(model,train_csv,device,epochs=5, batch_size=16):
                                     transform = data_transform)
     trainloader = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=0) # In the past my machine has been bad with multiple workers
     optimizer = optim.Adam(model.parameters(), lr=0.01)
-    loss_fn = nn.BCEWithLogitsLoss()
+    loss_fn = nn.L1Loss()
 
     start_time = time.time()
 
@@ -144,7 +144,7 @@ def train(model,train_csv,device,epochs=5, batch_size=16):
 
 #### Example training use ####
 # model = StomataMiniModel().to(device)
-# model = train(model,"data/train1.csv",device,batch_size=8,epochs=1)
+# model = train(model,"data/train1.csv",device,batch_size=16,epochs=5)
 # torch.save(model.state_dict(), "models/stomatamodel_v1.pth")
 
 def predict(model_path, image_path=str, device="cpu", show=True, image_size=512):
@@ -193,5 +193,5 @@ def predict(model_path, image_path=str, device="cpu", show=True, image_size=512)
         return mask.squeeze(0)  # Remove batch dimension
 
 #### Example Predict Use ####
-predict(model_path='models/stomatamodel_v1.pth',
-        image_path = 'data/BRO_PINTAE_Train5.png')
+# predict(model_path='models/stomatamodel_v1.pth',
+#         image_path = '/Users/aidanbrown/Desktop/brownsville/pintae/BRO_PINTAE_222_L2_SHADE_C.png')
