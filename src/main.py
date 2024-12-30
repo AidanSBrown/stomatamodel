@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 from PIL import Image
 from utils import landmarks_to_mask, PadToDivisible
 import time
+import numpy as np
 
 # Set GPU or CPU
 device = (
@@ -157,41 +158,44 @@ def predict(model, image_path=str, device="cpu", show=True, image_size=512):
     """
     model.eval()
 
-    image = Image.open(image_path)
-    # try: # Should check if this is really necessary        # In case need of resizing?
-    #     image = F.resize(image, [image_size, image_size])
-    # except RuntimeError as e:
-    #     print(f"Target size of size {image_size} too large, changing target size")
-    #     image.thumbnail((image_size,image_size), Image.Resampling.LANCZOS)
-    image = func.pil_to_tensor(image).float()
-    image = image.to(device).unsqueeze(0) 
+    image = Image.open(image_path).convert("RGB")  # Ensure RGB mode
+    print(f"Loaded image size: {image.size}, mode: {image.mode}")
+
+
+    image = func.pil_to_tensor(image).float() / 255.0  # Scale to [0, 1]
+    image = image.unsqueeze(0).to(device)  # Add batch dimension and move to device
+
     transform = transforms.Compose([
-        PadToDivisible(divisor=32),]) # To prevent tensor size mismatch error
+        PadToDivisible(divisor=32),
+        transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),  # Example for RGB
+    ])
     image = transform(image)
+    print(f"Transformed image tensor shape: {image.shape}, min: {image.min()}, max: {image.max()}")
 
     with torch.no_grad():
+        model.eval() 
         output = model(image)
 
-    # Sigmoid fn to get probabilities and then threshold to get binary mask
-    mask = torch.sigmoid(output) > 0.5
+    probabilities = torch.sigmoid(output)
+
+    mask = (probabilities > 0.1).cpu().numpy().squeeze() 
+
     if show:
-        print("Showing image prediction")
-        mask = mask.numpy().squeeze(0).squeeze(0)
-        image = image.numpy().squeeze().squeeze()
-        if image.ndim == 3:  # [C, H, W]
-            image = image.transpose(1, 2, 0)
-        plt.imshow(image)
-        plt.imshow(mask, alpha=0.5, cmap='viridis')
-        plt.colorbar(label='Mask Intensity')
+        image_np = image.squeeze().cpu().numpy().transpose(1, 2, 0)
+        image_np = (image_np * 255).clip(0, 255).astype(np.uint8)  
+
+        plt.figure(figsize=(10, 10))
+        plt.imshow(image_np)  
+        plt.imshow(mask, alpha=0.5, cmap='viridis')  
         plt.axis('off')
-        plt.title('Predicted stomata')
+        plt.title("Predicted Stomata")
         plt.show()
 
     else:
-        return mask.squeeze(0)  # Remove batch dimension
+        return mask  # Need to remove batch dimension with .squeeze()?
 
 #### Example Predict Use ####
 model = StomataMiniModel().to(device)
 model.load_state_dict(torch.load("models/stomatamodel_v2.pth"))
 predict(model=model,
-        image_path = '/Users/aidanbrown/Desktop/brownsville/BRO_MORCER_Train14.tif')
+        image_path = '/Users/aidanbrown/Desktop/BRO_PINTAE_Train4.png')

@@ -7,28 +7,21 @@ import matplotlib.pyplot as plt
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms, utils, datasets
 from PIL import Image
-from utils import landmarks_to_mask, PadToDivisible
+from utils import landmarks_to_mask, PadToDivisible, visualize_mask, csvcoordstogroup
 from torchvision.transforms import functional as F
 
-
-def show_landmarks(image, landmarks):
-    """Show image with landmarks"""
-    plt.imshow(image)
-    plt.scatter(landmarks[:, 0], landmarks[:, 1], s=10, marker='.', c='r')
-    plt.pause(0.001)  # pause a bit so that plots are updated
-
-
 class StomataDataset(Dataset):
-    """Stomata Landmarks dataset."""
+    """Stomata Landmarks dataset"""
 
     def __init__(self, csv_file, root_dir, target_size = 512, transform=None):
         """
         Arguments:
-            csv_file (string): Path to the csv file with annotations.
-            root_dir (string): Directory with all the images.
-            transform (callable, optional): Optional transform to be applied
-                on a sample.
+            csv_file (string): Path to the csv file with annotations
+            root_dir (string): Directory with all the images
+            transform (optional): Optional transform to be applied
+                on a sample
         """
+        self.annopath = csv_file
         self.annotations = pd.read_csv(csv_file)
         self.root_dir = root_dir
         self.transform = transform
@@ -45,10 +38,9 @@ class StomataDataset(Dataset):
                                 self.annotations.iloc[idx, 0])
         image = Image.open(img_name).convert("RGB")
 
-        landmarks = self.annotations.iloc[idx, 1:]
-        landmarks = np.array([landmarks], dtype=float).reshape(-1, 2)
+        landmarks_dict = csvcoordstogroup(self.annopath)
 
-        stomatamask = landmarks_to_mask(img_name,landmarks)
+        stomatamask = landmarks_to_mask(img_name,landmarks_dict)
         stomatamask = stomatamask.squeeze(0).squeeze(0)
 
         try: 
@@ -78,24 +70,20 @@ data_transform = transforms.Compose([
         transforms.RandomVerticalFlip(),
         transforms.ToTensor(),
         PadToDivisible(divisor=32), # To prevent tensor size mismatch error
-        transforms.Normalize((0.5,), (0.5,))
+        transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
     ])
 
-# train_set = StomataDataset(csv_file='data/faces/face_landmarks.csv',
-#                                     root_dir='data/faces/',
-#                                     transform = data_transform)
+train_set = StomataDataset(csv_file='data/train2.csv',
+                                    root_dir='data/',
+                                    transform = data_transform)
 
-# test_set = StomataDataset(csv_file='data/faces/face_landmarks.csv',
-#                                     root_dir='data/faces/',
-#                                     transform = data_transform)
 
-# trainloader = DataLoader(train_set, batch_size=16, shuffle=True, num_workers=0) # In the past my machine has been bad with multiple workers
-# testloader = DataLoader(test_set, batch_size=16, shuffle=False, num_workers=0)
+trainloader = DataLoader(train_set, batch_size=1, shuffle=True, num_workers=0) # In the past my machine has been bad with multiple workers
 
 # Test/debug
-# for image, labels in trainloader:
-#     print(image.shape, labels.shape) 
-#     break
+for image, labels in trainloader:
+    visualize_mask(image,labels)
+    break
 
 # Could make this into some function to replot/verify annotations
 # for i, sample in enumerate(dataset):
