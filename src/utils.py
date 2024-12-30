@@ -94,4 +94,4 @@ def shptocsv(shapefile_path, image_path, outpath, flipyaxis = True):
     df.insert(0, "image_name", os.path.basename(image_path))
     df.to_csv(outpath, index=False,na_rep="") # na rep supposed to exclude trailing commas but doesn't work
 
-# shptocsv('/Users/aidanbrown/Desktop/brownsville/stomata_train_05.shp','/Users/aidanbrown/Desktop/brownsville/BRO_PINTAE_Train5.png','data/train5.csv')
+shptocsv('/Users/aidanbrown/Desktop/brownsville/stomata_train_13.shp','/Users/aidanbrown/Desktop/brownsville/BRO_ILEOPA_Train13.tif','data/train13.csv')

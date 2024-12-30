@@ -113,7 +113,7 @@ def train(model,train_csv,device,epochs=5, batch_size=16):
                                     root_dir=os.path.dirname(train_csv),
                                     transform = data_transform)
     trainloader = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=0) # In the past my machine has been bad with multiple workers
-    optimizer = optim.Adam(model.parameters(), lr=0.01)
+    optimizer = optim.Adam(model.parameters(), lr=0.001)
     loss_fn = nn.L1Loss()
 
     start_time = time.time()
@@ -144,19 +144,17 @@ def train(model,train_csv,device,epochs=5, batch_size=16):
 
 #### Example training use ####
 # model = StomataMiniModel().to(device)
-# model = train(model,"data/train1.csv",device,batch_size=16,epochs=5)
-# torch.save(model.state_dict(), "models/stomatamodel_v1.pth")
+# model = train(model,"/Users/aidanbrown/Desktop/brownsville/train1.csv",device,batch_size=16,epochs=5)
+# torch.save(model.state_dict(), "models/stomatamodel_v2.pth")
 
-def predict(model_path, image_path=str, device="cpu", show=True, image_size=512):
+def predict(model, image_path=str, device="cpu", show=True, image_size=512):
     """
     Predict on an image 
     args: 
-        model: Path to pth model to load and make predictions
+        model: Loaded model
         image: Path to image to predict on
         device: Default cpu 
     """
-    model = StomataMiniModel().to(device)
-    model.load_state_dict(torch.load(model_path))
     model.eval()
 
     image = Image.open(image_path)
@@ -193,5 +191,7 @@ def predict(model_path, image_path=str, device="cpu", show=True, image_size=512)
         return mask.squeeze(0)  # Remove batch dimension
 
 #### Example Predict Use ####
-# predict(model_path='models/stomatamodel_v1.pth',
-#         image_path = '/Users/aidanbrown/Desktop/brownsville/pintae/BRO_PINTAE_222_L2_SHADE_C.png')
+model = StomataMiniModel().to(device)
+model.load_state_dict(torch.load("models/stomatamodel_v2.pth"))
+predict(model=model,
+        image_path = '/Users/aidanbrown/Desktop/brownsville/BRO_MORCER_Train14.tif')
