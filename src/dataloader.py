@@ -73,17 +73,17 @@ data_transform = transforms.Compose([
         transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
     ])
 
-train_set = StomataDataset(csv_file='/Users/aidanbrown/Desktop/brownsville/Fixed/train4.csv',
-                                    root_dir='/Users/aidanbrown/Desktop/brownsville/Fixed/',
-                                    transform = data_transform)
+# train_set = StomataDataset(csv_file='/Users/aidanbrown/Desktop/brownsville/Fixed/train4.csv',
+#                                     root_dir='/Users/aidanbrown/Desktop/brownsville/Fixed/',
+#                                     transform = data_transform)
 
 
-trainloader = DataLoader(train_set, batch_size=1, shuffle=True, num_workers=0) # In the past my machine has been bad with multiple workers
+# trainloader = DataLoader(train_set, batch_size=1, shuffle=True, num_workers=0) # In the past my machine has been bad with multiple workers
 
-# # Test/debug
-for image, labels in trainloader:
-    visualize_mask(image,labels)
-    break
+# # # Test/debug
+# for image, labels in trainloader:
+#     visualize_mask(image,labels)
+#     break
 
 # Could make this into some function to replot/verify annotations
 # for i, sample in enumerate(dataset):

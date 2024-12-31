@@ -144,9 +144,9 @@ def train(model,train_csv,device,epochs=5, batch_size=16):
     return model
 
 #### Example training use ####
-model = StomataMiniModel().to(device)
-model = train(model,"/Users/aidanbrown/Desktop/brownsville/Fixed/train1.csv",device,batch_size=16,epochs=5)
-torch.save(model.state_dict(), "models/stomatamodel_v3.pth")
+# model = Stomatann().to(device)
+# model = train(model,"/Users/aidanbrown/Desktop/brownsville/Fixed/train1.csv",device,batch_size=8,epochs=5)
+# torch.save(model.state_dict(), "models/stomatamodel_v4.pth")
 
 def predict(model, image_path=str, device="cpu", show=True, image_size=512, threshold=0.5):
     """
@@ -156,7 +156,6 @@ def predict(model, image_path=str, device="cpu", show=True, image_size=512, thre
         image: Path to image to predict on
         device: Default cpu 
     """
-    model.eval()
 
     image = Image.open(image_path).convert("RGB")  # Ensure RGB mode
     print(f"Loaded image size: {image.size}, mode: {image.mode}")
@@ -166,11 +165,11 @@ def predict(model, image_path=str, device="cpu", show=True, image_size=512, thre
     image = image.unsqueeze(0).to(device)  # Add batch dimension and move to device
 
     transform = transforms.Compose([
+        transforms.Resize((512,512)),
         PadToDivisible(divisor=32),
         transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),  # Need to resize too?
     ])
     image = transform(image)
-    print(f"Transformed image tensor shape: {image.shape}, min: {image.min()}, max: {image.max()}")
 
     with torch.no_grad():
         model.eval() 
@@ -195,7 +194,8 @@ def predict(model, image_path=str, device="cpu", show=True, image_size=512, thre
         return mask  # Need to remove batch dimension with .squeeze()?
 
 #### Example Predict Use ####
-# model = StomataMiniModel().to(device)
-# model.load_state_dict(torch.load("models/stomatamodel_v2.pth"))
-# predict(model=model,
-#         image_path = '/Users/aidanbrown/Desktop/BRO_PINTAE_Train4.png')
+model = StomataMiniModel().to(device)
+model.load_state_dict(torch.load("models/stomatamodel_v3.pth"))
+predict(model=model,
+        image_path = '/Users/aidanbrown/Desktop/Example_Morella.png',
+        threshold=0.5)
