@@ -38,8 +38,9 @@ def landmarks_to_mask(image_path, landmarks_dict):
     landmarks_list = landmarks_dict[img_name]
     
     for landmarks in landmarks_list:
-        landmarks = np.array(landmarks) #dtype=np.int32
-        landmarks = np.round(landmarks).astype(np.int32) # May be the reason getting weird numbers
+        landmarks = np.array(landmarks)
+        landmarks = np.nan_to_num(landmarks, nan=landmarks[0]) # If nan then sets point to first point in landmarks avoiding any mask issues
+        landmarks = landmarks.astype(np.int32) 
         cv2.fillPoly(mask, [landmarks], 1)
 
     return torch.tensor(mask, dtype=torch.float32)
