@@ -144,11 +144,11 @@ def train(model,train_csv,device,epochs=5, batch_size=16):
     return model
 
 #### Example training use ####
-# model = StomataMiniModel().to(device)
-# model = train(model,"/Users/aidanbrown/Desktop/brownsville/train1.csv",device,batch_size=16,epochs=5)
-# torch.save(model.state_dict(), "models/stomatamodel_v2.pth")
+model = StomataMiniModel().to(device)
+model = train(model,"/Users/aidanbrown/Desktop/brownsville/Fixed/train1.csv",device,batch_size=16,epochs=5)
+torch.save(model.state_dict(), "models/stomatamodel_v3.pth")
 
-def predict(model, image_path=str, device="cpu", show=True, image_size=512):
+def predict(model, image_path=str, device="cpu", show=True, image_size=512, threshold=0.5):
     """
     Predict on an image 
     args: 
@@ -167,7 +167,7 @@ def predict(model, image_path=str, device="cpu", show=True, image_size=512):
 
     transform = transforms.Compose([
         PadToDivisible(divisor=32),
-        transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),  # Example for RGB
+        transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),  # Need to resize too?
     ])
     image = transform(image)
     print(f"Transformed image tensor shape: {image.shape}, min: {image.min()}, max: {image.max()}")
@@ -178,7 +178,7 @@ def predict(model, image_path=str, device="cpu", show=True, image_size=512):
 
     probabilities = torch.sigmoid(output)
 
-    mask = (probabilities > 0.1).cpu().numpy().squeeze() 
+    mask = (probabilities > threshold).cpu().numpy().squeeze() 
 
     if show:
         image_np = image.squeeze().cpu().numpy().transpose(1, 2, 0)
@@ -195,7 +195,7 @@ def predict(model, image_path=str, device="cpu", show=True, image_size=512):
         return mask  # Need to remove batch dimension with .squeeze()?
 
 #### Example Predict Use ####
-model = StomataMiniModel().to(device)
-model.load_state_dict(torch.load("models/stomatamodel_v2.pth"))
-predict(model=model,
-        image_path = '/Users/aidanbrown/Desktop/BRO_PINTAE_Train4.png')
+# model = StomataMiniModel().to(device)
+# model.load_state_dict(torch.load("models/stomatamodel_v2.pth"))
+# predict(model=model,
+#         image_path = '/Users/aidanbrown/Desktop/BRO_PINTAE_Train4.png')

@@ -10,6 +10,7 @@ import pandas as pd
 import shapely
 import os
 from pathlib import Path
+from shapely.geometry import LineString, Polygon
 
 def show_landmarks(image, landmarks):
     """Show image with landmarks"""
@@ -37,7 +38,8 @@ def landmarks_to_mask(image_path, landmarks_dict):
     landmarks_list = landmarks_dict[img_name]
     
     for landmarks in landmarks_list:
-        landmarks = np.array(landmarks, dtype=np.int32)
+        landmarks = np.array(landmarks) #dtype=np.int32
+        landmarks = np.round(landmarks).astype(np.int32) # May be the reason getting weird numbers
         cv2.fillPoly(mask, [landmarks], 1)
 
     return torch.tensor(mask, dtype=torch.float32)
@@ -93,9 +95,7 @@ class PadToDivisible:
             return ImageOps.expand(image, border=(0, 0, pad_w, pad_h), fill=0)
 
 def shptocsv(shapefile_path, image_path, outpath, flipyaxis = True):
-    """
-    Convert shapefile of annotations 
-    """
+    """Convert shapefile of annotations to csv"""
     gdf = gpd.read_file(shapefile_path)
     
     rows = []
@@ -105,7 +105,6 @@ def shptocsv(shapefile_path, image_path, outpath, flipyaxis = True):
             continue
         
         coords = list(geom.exterior.coords)
-        
         coords = coords[:20]
         
         flattened = [coord for point in coords for coord in point]
@@ -128,7 +127,7 @@ def shptocsv(shapefile_path, image_path, outpath, flipyaxis = True):
     df.insert(0, "image_name", os.path.basename(image_path))
     df.to_csv(outpath, index=False,na_rep="") # na rep supposed to exclude trailing commas but doesn't work
 
-# shptocsv('/Users/aidanbrown/Desktop/brownsville/stomata_train_13.shp','/Users/aidanbrown/Desktop/brownsville/BRO_ILEOPA_Train13.tif','data/train13.csv')
+# shptocsv('/Users/aidanbrown/Desktop/brownsville/Fixed/stomata_train_10FIXED.shp','/Users/aidanbrown/Desktop/brownsville/Fixed/BRO_ACERUB_Train10.tif','/Users/aidanbrown/Desktop/brownsville/Fixed/train10.csv')
 
 
 def visualize_mask(image, mask, device="cpu"):
